@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../cubit/user_cubit.dart';
+import '../secound_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,20 +13,43 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
 
-  @override
-  void initState() {
-    super.initState();
-  }
   bool obscureText = false;
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   //final cubit = LoginCubit();
+  late UserCubit userCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    userCubit = BlocProvider.of<UserCubit>(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return
-          Scaffold(
+          BlocConsumer<UserCubit, UserState>(
+  listener: (context, state) {
+    // TODO: implement listener
+          if(state is SignInSuccessState)
+          {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Success")));
+            Navigator.push(context, MaterialPageRoute(builder: (context)=> SecoundScreen()));
+          }
+          else if(state is SignInFailedState)
+          {
+            showDialog(context: context, builder: (context)=>
+                AlertDialog(
+                  content: Text(state.errorMessage,
+                  style: TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: Colors.red,
+                ));
+          }
+  },
+  builder: (context, state) {
+    return Scaffold(
               appBar:  AppBar(title: Text(""),),
               body: Form(
                 key: formKey,
@@ -39,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextFormField(
-                        controller: emailController,
+                        controller:  context.read<UserCubit>().signInEmail,
                         decoration: InputDecoration(
                           border : OutlineInputBorder(),
                           hintText:"Phone number,Username,or email",
@@ -59,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextFormField(
-                        controller: passwordController,
+                        controller:  context.read<UserCubit>().signInPassword,
                         obscureText: obscureText,
                         decoration: InputDecoration(
                           border : OutlineInputBorder(),
@@ -89,8 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child:
-                      ElevatedButton(
+                      state is SignInLoadingState? CircularProgressIndicator(): ElevatedButton(
                         onPressed: () {
+                          context.read<UserCubit>().signIn();
                         //  login();
                         },
                         child: Text('Log In',style: TextStyle(color: Colors.white54),),
@@ -200,6 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
          // ),
        // ),
       );
+  },
+);
   }
   // void login() {
   //   if (!formKey.currentState!.validate()) {
